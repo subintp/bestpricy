@@ -1,25 +1,36 @@
 <?php
 
+	include("../database/database.php");
 
-  // get url from database
-	$base_url = "http://uae.souq.com/ae-en/mobile-phone/l/";
+	$DBH = get_DB();
+	if (isset($DBH)) {
+		//echo "connection success!";
+		$STH = $DBH->prepare('SELECT * FROM `bestpricy`.category');
+		$STH->execute();
+		while ($category = $STH->fetch()) { // TODO make  visited = 1
+      $base_url = $category['url'];
+      $category_id = $category['id'];
+			//echo "url =".$base_url;
+      //echo "category_id =".$category_id;
+      start_product_fetch($base_url,$category_id);
+		}
+	}
 
+  function start_product_fetch($base_url,$category_id) {
 
+    $total_products = get_total_products($base_url);
+    echo "total_products =". $total_products."<br>";
 
-	$total_products = get_total_products($base_url);
-	echo "total_products =". $total_products."<br>";
+    $total_pages = ceil($total_products/32);
+    echo "total_pages =". $total_pages."<br>";
 
-	$total_pages = ceil($total_products/32);
-	echo "total_pages =". $total_pages."<br>";
+    for ($i=33; $i <= $total_pages; $i++) {
 
-	for ($i=1; $i <= $total_pages; $i++) {
-
-		$url = $base_url."?page=".$i;
-		echo "url =".$url."</br>";
-		get_products_list($url);
-	}	
-
-
+      $url = $base_url."?page=".$i;
+      //echo "url =".$url."</br>";
+      get_products_list($url,$category_id);
+    }
+  }
 
 function get_total_products($url){
 
@@ -47,7 +58,7 @@ function get_total_products($url){
 }
 
 
-function get_products_list($url) {
+function get_products_list($url,$category_id) {
 
 	$agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)';
 
@@ -74,12 +85,19 @@ function get_products_list($url) {
 		$product_url = $product_url[0];
 		echo $product_url;
 		echo "<br>";
+
+    $DBH = get_DB();
+    if (isset($DBH)) {
+      echo "INSIDE DB INSERT";
+      $STH = $DBH->prepare('INSERT INTO `bestpricy`.product_list (category_id,url) VALUES (:category_id, :url)');
+      $STH->execute(array(':category_id' => $category_id, ':url' => $product_url));
+    }
 		// save url to database
 	}
-
 	curl_close($ch);
-
 }
+
+
 
 
 
