@@ -1,11 +1,10 @@
 <?php
 
-  # connect to the database
   class database {
 
-    private $host = "localhost";
+    private $host = "127.0.0.1";
     private $dbname = "bestpricy";
-    private $user = "rooti";
+    private $user = "root";
     private $pass = "root";
 
     public function connect () {
@@ -17,55 +16,17 @@
 
       catch(PDOException $e) {
           echo "error message =".$e->getMessage();
-          //log this error message
+          //log this
       }
     }
   }
 
-  $DBH = new database();
-  $status = $DBH->connect();
-  if(isset($status)){
-    echo "connected";
-  }else {
-    echo "disconnected";
-  }
-  
- /* function connect () {
-
-    $host = "localhost";
-    $dbname = "bestpricy";
-    $user = "root";
-    $pass = "root";
-
-    try {
-
-      $DBH = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);   
-      $DBH->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-      return true;
-       
-    }
-
-    catch(PDOException $e) {
-        echo "error message =".$e->getMessage();
-        #LOG ERROR MESSAGE
-        return false;
-
+  function get_DB(){
+    $DB = new database();
+    $DBH = $DB->connect();
+    if (isset($DBH)) {
+     return $DBH;
     }
   }
-
-  function disconnect() {
-
-  }
-
-  $status = connect();
-  if ($status) {
-    echo "database connected successfully";
-  }else {
-    echo "connection failed"; 
-  }*/
- 
-
-  // $STH = $DBH->prepare('INSERT INTO `bestpricy`.catagory (name,url) VALUES (:name,:url)');
-  // $STH->execute([:name => "subin",:url => "hello.com"]);
 
 ?>
