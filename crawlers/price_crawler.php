@@ -78,22 +78,22 @@
 	function url_maker($product_name, $vendor, $search_url) {
 
 		$product_name = urlencode($product_name);
-
+		$category_name = "mobile";
 		switch ($vendor) {
 			case "mobileshop":
-				$url = $search_url.$product_name;
+				$url = $search_url.$product_name."+".$category_name;
 				break;
 
 			case "mygsm":
-				$url = $search_url.$product_name;
+				$url = $search_url.$product_name."+".$category_name;
 				break;
 
 			case "jadopado":
-				$url = $search_url.$product_name."&hitsPerPage=24&page=0";
+				$url = $search_url.$product_name."+".$category_name."&hitsPerPage=24&page=0";
 				break;
 			
 			case "aido":
-				$url = $search_url.$product_name;
+				$url = $search_url.$product_name."+".$category_name;
 				break;
 
 			case "souq":
