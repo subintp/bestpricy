@@ -1,6 +1,52 @@
 <?php
 
-	// TODO CHECK PRODUCT AVAILABILITY
+	include("../database/database.php");
+
+	$DBH = get_DB();
+
+	if (isset($DBH)) {
+
+		$STH = $DBH->prepare('SELECT * FROM `bestpricy`.vendor');
+		$STH->execute();
+		$vendors =$STH->fetchAll();
+
+
+	  $STH = $DBH->prepare('SELECT * FROM `bestpricy`.product_details WHERE visited = 0 LIMIT 2');
+	  $STH->execute();
+
+	  while ($product = $STH->fetch()) { 
+
+	  $product_name = format_name($product['name']);
+	  $product_id = $product['id'];
+
+	  echo "product name =".$product_name."<br>";
+
+	  foreach ($vendors as $vendor) {
+
+	  	$vendor_id = $vendor['id'];
+	  	$vendor_name = $vendor['name'];	  	
+	  	$search_url = $vendor['search_url'];
+
+	  	$url = url_maker($product_name,$vendor_name,$search_url);
+	  	fetch_price($url, $vendor_name);
+
+
+
+	  }
+
+	  echo "<br><br>";
+
+
+
+	  }
+	}
+
+
+
+
+
+
+	/*// TODO CHECK PRODUCT AVAILABILITY
 
 	$product_name = "nokia lumia 520";
 
@@ -16,36 +62,44 @@
 	$url = url_maker($product_name, $vendor);
 	echo "url =".$url;
 
-	fetch_price($url, $vendor);
+	fetch_price($url, $vendor);*/
+
+	function format_name($name) {
+		$name = explode('(', $name);
+		if (isset($name[1])) {
+			return $name[0];
+		}
+		return $name;
+	}
 
 
 
 
-	function url_maker($product_name, $vendor) {
+	function url_maker($product_name, $vendor, $search_url) {
 
 		$product_name = urlencode($product_name);
 
 		switch ($vendor) {
 			case "mobileshop":
-				$url = "http://mobileshop.ae/index.php?route=product/search&search=".$product_name;
+				$url = $search_url.$product_name;
 				break;
 
 			case "mygsm":
-				$url = "http://www.mygsm.me/search.php?getProductsByLetters=1&letters=".$product_name;
+				$url = $search_url.$product_name;
 				break;
 
 			case "jadopado":
-				$url = "https://uae.jadopado.com/search?sort=products&query=".$product_name."&hitsPerPage=24&page=0";
+				$url = $search_url.$product_name."&hitsPerPage=24&page=0";
 				break;
 			
 			case "aido":
-				$url = "http://www.aido.com/eshop/faces/tiles/search.jsp?q=".$product_name;
+				$url = $search_url.$product_name;
 				break;
 
 			case "souq":
 				$product_name = urldecode($product_name);
 				$product_name = str_replace(array(" "), '-', $product_name);
-				$url = "http://uae.souq.com/ae-en/".$product_name."/s/";
+				$url = $search_url.$product_name."/s/";
 				break;		
 		}
 		return $url;
@@ -86,12 +140,12 @@
 				$product_url = explode('">', $product_url[1]);
 				$product_url = $product_url[0];
 
-				echo "url =".$product_url;
+				echo "mobile shop url =".$product_url;
 
 				$price = explode('class="price">', $product_content[1]);
 				$price = explode('AED', $price[1]);
 				$price = $price[0];
-				echo "<br>price =".$price;
+				echo "<br> mobile shop price =".$price;
 
 			}
 			
@@ -112,12 +166,12 @@
 
 					$product_url = explode(" ><img", $product_url[1]);
 					$product_url = $product_url[0];
-					echo "url =".$product_url;
+					echo "my gsm url =".$product_url;
 
 					$price = explode('AED', $product_content[0]);
 					$price = explode('</div>', $price[1]);
 					$price = $price[0];
-					echo "<br>www.mygsm.me price = ".$price;				
+					echo "<br>mygsm.me price = ".$price;				
 				}
 				
 			}
@@ -138,12 +192,12 @@
 				$product_url = explode('<a href="', $product_content[1]);
 				$product_url = explode('" title="', $product_url[1]);
 				$product_url = "www.jadopado.com".$product_url[0];
-				echo "url =".$product_url;
+				echo " jadopado url =".$product_url;
 
 				$price = explode('AED', $product_content[1]);
 				$price = explode('</strong>',$price[1]);
 				$price = $price[0];
-				echo "<br>price =".$price;
+				echo "<br> jadopado price =".$price;
 			}		
 		}
 		
@@ -160,13 +214,13 @@
 				$product_url = explode('" title=', $product_url[1]);
 				$product_url = "www.aido.com".$product_url;
 
-				echo "url =".$product_url;
+				echo "aido url =".$product_url;
 
 				$price = explode('class="offer-price"',$product_content[1]);
 				$price = explode('AED</span>', $price[1]);
 				$price = explode('</p>', $price[1]);
 				$price = $price[0];
-				echo "price =".$price;			
+				echo "<br> aido price =".$price;			
 			}	
 
 		}
@@ -190,7 +244,7 @@
 				$product_url = explode('<a href="', $product_content);
 				$product_url = explode('"', $product_url[1]);
 				$product_url = $product_url[0];
-				echo "url =".$product_url;
+				echo " souq url =".$product_url;
 
 				$price = explode('small-price', $product_content);
 				$price = explode("AED",$price[1]);
@@ -206,7 +260,7 @@
 					$price = explode('<span', $price[0]);
 					$price = explode('marb-5">', $price[0]);
 					$price = $price[1];
-					echo "price = ".$price;		
+					echo "<br> souq price = ".$price;		
 				}
 			}		
 		}
