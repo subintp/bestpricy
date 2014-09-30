@@ -4,11 +4,13 @@
 
 	$DBH = get_DB();
 
+
 	if (isset($DBH)) {
 
 		$STH = $DBH->prepare('SELECT * FROM `bestpricy`.vendor');
 		$STH->execute();
 		$vendors =$STH->fetchAll();
+
 
 
 	  $STH = $DBH->prepare('SELECT * FROM `bestpricy`.product_details WHERE visited = 0 LIMIT 2');
@@ -81,7 +83,7 @@
 		$category_name = "mobile";
 		switch ($vendor) {
 			case "mobileshop":
-				$url = $search_url.$product_name."+".$category_name;
+				$url = $search_url.$product_name;
 				break;
 
 			case "mygsm":
@@ -130,7 +132,7 @@
 
 		if ($vendor == "mobileshop") {
 
-			echo "inside mobileshop";
+			
 
 			$product_content = explode('class="span4 product-block"', $page_content);
 
@@ -156,7 +158,7 @@
 		//www.mygsm.me
 
 		if ($vendor == "mygsm") {
-
+			echo $url;
 			$product_content = explode('class="clearing"', $page_content);
 			if (isset($product_content[1])) {
 
@@ -195,7 +197,12 @@
 				echo " jadopado url =".$product_url;
 
 				$price = explode('AED', $product_content[1]);
-				$price = explode('</strong>',$price[1]);
+				if (strpos($price[0],'old_price jp-productPrice') !== false){
+					$price = explode('</strong>', $price[2]);
+				}
+				else{
+					$price = explode('</strong>',$price[1]);
+				}
 				$price = $price[0];
 				echo "<br> jadopado price =".$price;
 			}		
