@@ -4,44 +4,75 @@
 
 	$DBH = get_DB();
 
-
-	if (isset($DBH)) {
+  
+   if (isset($DBH)) {
 
 		$STH = $DBH->prepare('SELECT * FROM `bestpricy`.vendor');
 		$STH->execute();
 		$vendors =$STH->fetchAll();
 
 
-
-	  $STH = $DBH->prepare('SELECT * FROM `bestpricy`.product_details WHERE visited = 0 LIMIT 2');
+	 $STH = $DBH->prepare('SELECT * FROM `bestpricy`.product_details WHERE visited = 0 ');
 	  $STH->execute();
+	  $products = $STH->fetchAll();
 
-	  while ($product = $STH->fetch()) { 
+	//while ($product = $STH->fetch()) { 
+	  foreach ($products as $product){
 
-	  $product_name = format_name($product['name']);
-	  $product_id = $product['id'];
+	  	 $product_name = format_name($product['name']);
+	 	 $category_id =$product['category_id'];
+	 	 $product_id = $product['id'];
 
-	  echo "product name =".$product_name."<br>";
+	  	echo "product name =".$product_name."<br>";
 
-	  foreach ($vendors as $vendor) {
+	  	foreach ($vendors as $vendor){
 
-	  	$vendor_id = $vendor['id'];
-	  	$vendor_name = $vendor['name'];	  	
-	  	$search_url = $vendor['search_url'];
+	  		$vendor_id = $vendor['id'];
+	  		$vendor_name = $vendor['name'];	  	
+	  		$search_url = $vendor['search_url'];
+	  		$url = url_maker($product_name,$vendor_name,$search_url);
+	  		$price =fetch_price($url, $vendor_name);
+        	echo "<br> url =".$url."  price=".$price;
+			
+			if($price!=null){
 
-	  	$url = url_maker($product_name,$vendor_name,$search_url);
-	  	fetch_price($url, $vendor_name);
-
-
-
-	  }
-
-	  echo "<br><br>";
-
-
-
-	  }
-	}
+       			$price = explode('.', $price);
+   				$price = floatval(str_replace(',', '', $price[0]));		
+				echo "<br> url =".$url."  price=".$price;
+				$d = date("Y-m-d H:i:s");
+				echo "<br>";
+				echo $d;
+  		        $STH = $DBH->prepare('SELECT * FROM `bestpricy`.price_details WHERE product_id = :product_id AND category_id=:category_id AND  vendor_id=:vendor_id ');
+	 		 	$STH->execute(array("product_id"=>$product_id,"category_id"=>$category_id,"vendor_id"=>$vendor_id));
+				$Old =$STH->fetch();
+				print_r($Old);	
+				
+				if($Old!=null){
+					$Oprice = $Old['price'];
+					echo "<br> old_price=".$Oprice;
+					echo "<br> new_price=".$price;
+			
+					if($Oprice!=$price){
+						echo " DB UPDATE";
+						echo $price;	
+						$STH = $DBH->prepare('UPDATE  `bestpricy`.price_details SET price = :price,date = :date
+							WHERE product_id=:product_id and category_id=:category_id and vendor_id=:vendor_id');
+						$STH->execute(array("price" => $price,"date" =>$d,"product_id"=>$product_id, "category_id"=>$category_id, "vendor_id"=>$vendor_id));
+					}
+      			}
+      		else{
+      		echo "INSIDE DB INSERT";
+      		$STH = $DBH->prepare('INSERT INTO `bestpricy`.price_details (product_id,category_id,vendor_id,price,date) VALUES (:product_id,:category_id,:vendor_id,:price,:d)');
+      		$STH->execute(array(':product_id' => $product_id,':category_id' => $category_id, ':vendor_id' => $vendor_id,':price' => $price,':d' => $d));
+    		}
+    	
+    	}
+    }
+    	echo "<br><br>";
+    }
+}
+	
+	  
 
 
 
@@ -133,7 +164,7 @@
 		if ($vendor == "mobileshop") {
 
 			
-
+			$price=null;
 			$product_content = explode('class="span4 product-block"', $page_content);
 
 			if (isset($product_content[1])) {
@@ -142,15 +173,15 @@
 				$product_url = explode('">', $product_url[1]);
 				$product_url = $product_url[0];
 
-				echo "mobile shop url =".$product_url;
+				//echo "mobile shop url =".$product_url;
 
 				$price = explode('class="price">', $product_content[1]);
 				$price = explode('AED', $price[1]);
 				$price = $price[0];
-				echo "<br> mobile shop price =".$price;
+				//echo "<br> mobile shop price =".$price;
 
 			}
-			
+			return $price;
 
 		}
 		
@@ -158,7 +189,10 @@
 		//www.mygsm.me
 
 		if ($vendor == "mygsm") {
-			echo $url;
+			/*echo $url;
+			$page_content=htmlspecialchars($page_content);
+			echo $page_content;*/
+			$price=null;
 			$product_content = explode('class="clearing"', $page_content);
 			if (isset($product_content[1])) {
 
@@ -168,22 +202,23 @@
 
 					$product_url = explode(" ><img", $product_url[1]);
 					$product_url = $product_url[0];
-					echo "my gsm url =".$product_url;
+				//	echo "my gsm url =".$product_url;
 
 					$price = explode('AED', $product_content[0]);
 					$price = explode('</div>', $price[1]);
 					$price = $price[0];
-					echo "<br>mygsm.me price = ".$price;				
+				//	echo "<br>mygsm.me price = ".$price;				
 				}
 				
 			}
-		
+			return $price;
 		}
 
 
 		// jadopado.com
 		if ($vendor == "jadopado") {
 
+			$price=null;
 			$status = explode('prd_count_inner', $page_content);
 			$status = explode('class="clear"', $status[1]);
 
@@ -194,7 +229,7 @@
 				$product_url = explode('<a href="', $product_content[1]);
 				$product_url = explode('" title="', $product_url[1]);
 				$product_url = "www.jadopado.com".$product_url[0];
-				echo " jadopado url =".$product_url;
+				//echo " jadopado url =".$product_url;
 
 				$price = explode('AED', $product_content[1]);
 				if (strpos($price[0],'old_price jp-productPrice') !== false){
@@ -204,14 +239,18 @@
 					$price = explode('</strong>',$price[1]);
 				}
 				$price = $price[0];
-				echo "<br> jadopado price =".$price;
+				//echo "<br> jadopado price =".$price;
+		
 			}		
+			return $price;
 		}
 		
 
 
 		//aido.com
 		if ($vendor == "aido") {
+			
+			$price=null;
 			$product_content = explode('prodInfo_110x140_01_None prodInfo_110x140_01_None_2', $page_content);
 
 			if (isset($product_content[1])) {
@@ -219,17 +258,18 @@
 				$product_url = explode('class="proImg"', $product_content[1]);
 				$product_url = explode('<a href="', $product_url[1]);
 				$product_url = explode('" title=', $product_url[1]);
-				$product_url = "www.aido.com".$product_url;
+				$product_url = "www.aido.com".$product_url[0];
 
-				echo "aido url =".$product_url;
+
+				//echo "aido url =".$product_url;
 
 				$price = explode('class="offer-price"',$product_content[1]);
 				$price = explode('AED</span>', $price[1]);
 				$price = explode('</p>', $price[1]);
 				$price = $price[0];
-				echo "<br> aido price =".$price;			
+				//echo "<br> aido price =".$price;			
 			}	
-
+			return $price;
 		}
 		
 
@@ -237,6 +277,7 @@
 
 		if ($vendor == "souq") {
 
+			$price=null;
 			$page_content = explode('id="col3_content"',$page_content);
 			$page_content = $page_content[1];
 
@@ -251,7 +292,7 @@
 				$product_url = explode('<a href="', $product_content);
 				$product_url = explode('"', $product_url[1]);
 				$product_url = $product_url[0];
-				echo " souq url =".$product_url;
+				//echo " souq url =".$product_url;
 
 				$price = explode('small-price', $product_content);
 				$price = explode("AED",$price[1]);
@@ -261,23 +302,20 @@
 					$price = explode('<span', $price[1]);
 					$price = explode('</span>', $price[0]);
 					$price = $price[2];
-					echo "price =".$price;
+				//	echo "price =".$price;
 				} else if (sizeof($price) == 2) {
 					//without offer price
 					$price = explode('<span', $price[0]);
 					$price = explode('marb-5">', $price[0]);
 					$price = $price[1];
-					echo "<br> souq price = ".$price;		
+				//	echo "<br> souq price = ".$price;		
 				}
-			}		
+			}	
+			return $price;	
 		}
+
+				
 		curl_close($ch);
+		
 	}
-
-
-
-	
-	
-
-
 ?>
